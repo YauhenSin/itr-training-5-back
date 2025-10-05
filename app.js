@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
@@ -37,12 +38,23 @@ app.get('/users', async (req, res) => {
 app.post('/users', async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
-      data: { name, email, password },
+      data: { name, email, password: hashedPassword },
       select: userSelect
     });
+
     res.status(201).json(user);
   } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'A user with that email already exists.' });
+    }
     res.status(400).json({ error: error.message });
   }
 });
