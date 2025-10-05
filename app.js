@@ -6,6 +6,14 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
+const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+  status: true,
+  registrationTime: true
+};
+
 app.use(cors());
 app.use(express.json());
 
@@ -16,7 +24,9 @@ app.get('/main', (req, res) => {
 // Get all users
 app.get('/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      select: userSelect
+    });
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -26,9 +36,10 @@ app.get('/users', async (req, res) => {
 // Create a new user
 app.post('/users', async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
     const user = await prisma.user.create({
-      data: { name, email }
+      data: { name, email, password },
+      select: userSelect
     });
     res.status(201).json(user);
   } catch (error) {
